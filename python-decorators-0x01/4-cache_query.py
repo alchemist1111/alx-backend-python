@@ -3,7 +3,7 @@ import time
 import sqlite3
 import functools
 
-# Simple cache dictionary
+# Simple cache dictionary with timestamp
 query_cache = {}
 
 # Decorator to handle opening and closing DB connection
@@ -18,16 +18,17 @@ def with_db_connection(func):
         return result
     return wrapper
 
-# Decorator to cache query results
+# Decorator to cache query results with timestamp
 def cache_query(func):
     @functools.wraps(func)
     def wrapper(conn, query, *args, **kwargs):
         if query in query_cache:
-            print(f"[CACHE HIT] Returning cached result for query: {query}")
-            return query_cache[query]
+            cached_result, timestamp = query_cache[query]
+            print(f"[CACHE HIT] Query: {query} (cached at {time.strftime('%H:%M:%S', time.localtime(timestamp))})")
+            return cached_result
         print(f"[CACHE MISS] Executing and caching query: {query}")
         result = func(conn, query, *args, **kwargs)
-        query_cache[query] = result
+        query_cache[query] = (result, time.time())  # store result with timestamp
         return result
     return wrapper
 
