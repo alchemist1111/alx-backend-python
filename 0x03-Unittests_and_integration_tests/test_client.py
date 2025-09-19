@@ -173,7 +173,6 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         self.assertEqual(repos, self.apache2_repos)
         self.mock_get.assert_called()
 
-
 if __name__ == "__main__":
     unittest.main()
     
