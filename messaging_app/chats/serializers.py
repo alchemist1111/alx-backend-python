@@ -16,6 +16,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['user_id', 'first_name', 'last_name', 'email', 'phone_number', 'role', 'created_at', 'updated_at']
+        read_only_fields = ["user_id", "created_at", "updated_at"]
+        extra_kwargs = {"email": {"required": True}}
      
     def get_full_name(self, obj):
         # Custom method to generate the full name dynamically
@@ -62,13 +64,25 @@ class UserSerializer(serializers.ModelSerializer):
 # Message Serializer
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
+    sender_id = serializers.UUIDField(write_only=True)
+    message_body_text = serializers.CharField(source="message_body", read_only=True)
+    sender_email = serializers.SerializerMethodField()
+    formatted_sent_at = serializers.SerializerMethodField()
     conversation = serializers.PrimaryKeyRelatedField(queryset=Conversation.objects.all(), write_only=True)
     message_body = serializers.TextField()
     
     class Meta:
         model = Message
-        fields = ['message_id', 'sender', 'conversation', 'message_body', 'sent_at']
-        read_only_fields = ['message_id', 'sent_at']   
+        fields = ['message_id', 'sender', 'sender_id', 'conversation', 'message_body', 'message_body_text', 'formatted_sent_at', 'sent_at']
+        read_only_fields = ['message_id', 'sent_at'] 
+    
+    def get_sender_email(self, obj):
+        """Get sender's email address."""
+        return obj.sender.email
+    
+    def get_formatted_sent_at(self, obj):
+        """Format the sent_at timestamp for display."""
+        return obj.sent_at.strftime('%Y-%m-%d %H:%M:%S') if obj.sent_at else None      
 
 
 # Conversation Serializer
