@@ -12,7 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(max_length=20, allow_null=True, allow_blank=True)
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
     
-    full_name = serializers.serializerMethodField(read_only=True)
+    full_name = serializers.serializerMethodField()
     class Meta:
         model = User
         fields = ['user_id', 'first_name', 'last_name', 'email', 'phone_number', 'role', 'created_at', 'updated_at']
