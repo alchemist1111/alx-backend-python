@@ -2,14 +2,26 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
-from .models import User, Conversation, Message
-from .serializers import UserSerializer, ConversationSerializer, MessageSerializer
+from django_filters import rest_framework as filters
+from .models import Conversation, Message
+from .serializers import ConversationSerializer, MessageSerializer
+from .models import User
 
-# Conversation Viewset
+# Filter class for filtering Conversations
+class ConversationFilter(filters.FilterSet):
+    created_after = filters.DateTimeFilter(field_name='created_at', lookup_expr='gte')
+    created_before = filters.DateTimeFilter(field_name='created_at', lookup_expr='lte')
+
+    class Meta:
+        model = Conversation
+        fields = ['created_after', 'created_before']
+
 class ConversationViewSet(viewsets.ModelViewSet):
     queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
-    
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = ConversationFilter
+
     def perform_create(self, serializer):
         # Create a conversation and add participants
         conversation = serializer.save()
@@ -26,17 +38,25 @@ class ConversationViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save(sender=request.user, conversation=conversation)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# Filter class for filtering Messages
+class MessageFilter(filters.FilterSet):
+    sent_after = filters.DateTimeFilter(field_name='sent_at', lookup_expr='gte')
+    sent_before = filters.DateTimeFilter(field_name='sent_at', lookup_expr='lte')
 
-# Message viewset
+    class Meta:
+        model = Message
+        fields = ['sent_after', 'sent_before']
+
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = MessageFilter
 
     def perform_create(self, serializer):
         conversation = serializer.validated_data['conversation']
         # Ensure the sender is assigned from the authenticated user
-        serializer.save(sender=self.request.user, conversation=conversation)        
-            
-                    
+        serializer.save(sender=self.request.user, conversation=conversation)
