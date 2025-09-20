@@ -26,6 +26,17 @@ class ConversationViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save(sender=request.user, conversation=conversation)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+
+
+# Message viewset
+class MessageViewSet(viewsets.ModelViewSet):
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+
+    def perform_create(self, serializer):
+        conversation = serializer.validated_data['conversation']
+        # Ensure the sender is assigned from the authenticated user
+        serializer.save(sender=self.request.user, conversation=conversation)        
             
                     
