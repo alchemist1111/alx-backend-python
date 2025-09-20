@@ -11,9 +11,15 @@ class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=255)
     phone_number = serializers.CharField(max_length=20, allow_null=True, allow_blank=True)
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
+    
+    full_name = serializers.serializerMethodField(read_only=True)
     class Meta:
         model = User
         fields = ['user_id', 'first_name', 'last_name', 'email', 'phone_number', 'role', 'created_at', 'updated_at']
+     
+    def get_full_name(self, obj):
+        # Custom method to generate the full name dynamically
+        return f'{obj.first_name} {obj.last_name}' 
      
     def validate_first_name(self, value):
          # Ensure first name is not empty and contains only alphabets
