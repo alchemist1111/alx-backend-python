@@ -14,7 +14,7 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(unique=True, null=False, blank=False)
     phone_number = models.CharField(max_length=20, null=True, blank=True)
-    password = models.CharField(max_length=128, null=False, blank=False)
+    password = models.CharField(max_length=128, null=False, blank=False) # This field is not usually hardcoded in django
     role = models.CharField(max_length=50, choices=ROLE_CHOICES, null=False, default='guest')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
