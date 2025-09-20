@@ -27,37 +27,37 @@ class UserSerializer(serializers.ModelSerializer):
     def validate_first_name(self, value):
          # Ensure first name is not empty and contains only alphabets
          if not value.isalpha():
-             raise ValidationError('First name must contain only alphabetic characters.')
+             raise serializers.ValidationError('First name must contain only alphabetic characters.')
          return value
     
     def validate_last_name(self, value):
          # Ensure last name is not empty and contains only alphabets
          if not value.isalpha():
-             raise ValidationError('Last name must contain only alphabetic characters.')
+             raise serializers.ValidationError('Last name must contain only alphabetic characters.')
          return value 
         
     def validate_email(self, value):
         # Check if the email already exists in the database
         if User.objects.filter(email=value).exists():
-            raise ValidationError('Email is already in use.')
+            raise serializers.ValidationError('Email is already in use.')
         return value
     
     def validate_phone_number(self, value):
         # Validate phone number format using a regex.
         if value and not re.match(r'^\+?1?\d{9, 15}$', value):
-            raise ValidationError('Phone number must be entered in the format: "+999999999". Up to 15 digits allowed.')
+            raise serializers.ValidationError('Phone number must be entered in the format: "+999999999". Up to 15 digits allowed.')
         return value
     
     def validate_role(self, value):
         # Ensure the role is one of the predifined choices
         if value not in dict(User.ROLE_CHOICES).keys():
-            raise ValidationError(f'Role must be on of the following: {list(dict(User.ROLE_CHOICES).keys())}')
+            raise serializers.ValidationError(f'Role must be on of the following: {list(dict(User.ROLE_CHOICES).keys())}')
         return value
     
     def validate(self, data):
         # Object-level validation for complex logic involving multiple fields
         if not data.get('first_name') or not data.get('last_name'):
-            raise ValidationError('Both first name and last name are required.')
+            raise serializers.ValidationError('Both first name and last name are required.')
         return data
         
 
@@ -100,7 +100,7 @@ class ConversationSerializer(serializers.ModelSerializer):
     def validate_conversation(self, value):
         # Custom validation to check if the user is a participant
         if self.context['request'].user not in value.participants.all():
-            raise ValidationError('User is not a participant in this conversation.')
+            raise serializers.ValidationError('User is not a participant in this conversation.')
         return value               
         
                 
