@@ -15,4 +15,4 @@ urlpatterns = [
     path('', include(routers.urls))
 ]
 
-dummy = router.DefaultRouter()
+dummy = routers.DefaultRouter()
