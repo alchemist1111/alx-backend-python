@@ -12,7 +12,8 @@ class UserSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(max_length=20, allow_null=True, allow_blank=True)
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
     
-    full_name = serializers.serializerMethodField()
+    full_name = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = ['user_id', 'first_name', 'last_name', 'email', 'phone_number', 'role', 'created_at', 'updated_at']
@@ -69,7 +70,7 @@ class MessageSerializer(serializers.ModelSerializer):
     sender_email = serializers.SerializerMethodField()
     formatted_sent_at = serializers.SerializerMethodField()
     conversation = serializers.PrimaryKeyRelatedField(queryset=Conversation.objects.all(), write_only=True)
-    message_body = serializers.TextField()
+
     
     class Meta:
         model = Message
