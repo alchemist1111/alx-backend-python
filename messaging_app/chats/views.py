@@ -5,10 +5,15 @@ from rest_framework import status
 from django_filters import rest_framework as filters
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
-from .models import User
+from django.contrib.auth import get_user_model
 from rest_framework import permissions
 from .permissions import IsOwner
 from .permissions import IsParticipantOfConversation
+from django_filters.rest_framework import DjangoFilterBackend
+from .pagination import MessagePagination
+from .filters import MessageFilter
+
+User = get_user_model()
 
 # Filter class for filtering Conversations
 class ConversationFilter(filters.FilterSet):
@@ -59,7 +64,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = MessageFilter
-    permission_classes = [permissions.IsAuthenticated, IsParticipantOfConversation, IsOwner]
+    permission_classes = [permissions.IsAuthenticated, IsParticipantOfConversation]
     
     def get_queryset(self):
         """
