@@ -9,7 +9,6 @@ from .models import User
 from rest_framework import permissions
 from .permissions import IsOwner
 from .permissions import IsParticipantOfConversation
-from rest_framework.exceptions import PermissionDenied
 
 # Filter class for filtering Conversations
 class ConversationFilter(filters.FilterSet):
@@ -64,25 +63,99 @@ class MessageViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Return only the messages related to the logged-in user's conversations.
+        Return messages that belong only to the logged-in user's conversations.
+        This filters messages based on the conversation the user is a participant of.
         """
         conversation_id = self.kwargs.get('conversation_id')
+
         try:
             conversation = Conversation.objects.get(id=conversation_id)
         except Conversation.DoesNotExist:
-            raise PermissionDenied("Conversation does not exist.")
+            return Response(
+                {"detail": "Conversation does not exist."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Check if the user is a participant of the conversation
+        if self.request.user not in conversation.participants.all():
+            return Response(
+                {"detail": "You are not a participant in this conversation."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Return messages related to the conversation the user is a part of
+        return Message.objects.filter(conversation=conversation)
 
     def perform_create(self, serializer):
         """
-        Override to make sure the user is sending a message to a valid conversation.
+        Ensure the user is a participant of the conversation before creating a message.
         """
         conversation_id = self.kwargs.get('conversation_id')
+
         try:
             conversation = Conversation.objects.get(id=conversation_id)
         except Conversation.DoesNotExist:
-            raise PermissionDenied("Conversation does not exist.")
-        
+            return Response(
+                {"detail": "Conversation does not exist."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Ensure the user is a participant of the conversation
         if self.request.user not in conversation.participants.all():
-            raise PermissionDenied("You are not a participant in this conversation.")
-        
+            return Response(
+                {"detail": "You are not a participant in this conversation."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Save the message with the user and conversation information
         serializer.save(user=self.request.user, conversation=conversation)
+
+    def perform_update(self, serializer):
+        """
+        Override update to ensure the user is a participant of the conversation
+        before allowing the message update.
+        """
+        conversation_id = self.kwargs.get('conversation_id')
+
+        try:
+            conversation = Conversation.objects.get(id=conversation_id)
+        except Conversation.DoesNotExist:
+            return Response(
+                {"detail": "Conversation does not exist."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Ensure the user is a participant of the conversation
+        if self.request.user not in conversation.participants.all():
+            return Response(
+                {"detail": "You are not a participant in this conversation."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Save the updated message
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        """
+        Override destroy to ensure the user is a participant of the conversation
+        before allowing the message deletion.
+        """
+        conversation_id = self.kwargs.get('conversation_id')
+
+        try:
+            conversation = Conversation.objects.get(id=conversation_id)
+        except Conversation.DoesNotExist:
+            return Response(
+                {"detail": "Conversation does not exist."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Ensure the user is a participant of the conversation
+        if self.request.user not in conversation.participants.all():
+            return Response(
+                {"detail": "You are not a participant in this conversation."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Proceed with deleting the message
+        instance.delete()
