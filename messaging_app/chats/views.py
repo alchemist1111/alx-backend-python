@@ -9,6 +9,7 @@ from .models import User
 from rest_framework import permissions
 from .permissions import IsOwner
 from .permissions import IsParticipantOfConversation
+from rest_framework.exceptions import PermissionDenied
 
 # Filter class for filtering Conversations
 class ConversationFilter(filters.FilterSet):
@@ -63,12 +64,25 @@ class MessageViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Return messages that belong only to conversations
-        the current user participates in.
+        Return only the messages related to the logged-in user's conversations.
         """
-        return Message.objects.filter(conversation__participants=self.request.user)
+        conversation_id = self.kwargs.get('conversation_id')
+        try:
+            conversation = Conversation.objects.get(id=conversation_id)
+        except Conversation.DoesNotExist:
+            raise PermissionDenied("Conversation does not exist.")
 
     def perform_create(self, serializer):
-        conversation = serializer.validated_data['conversation']
-        # Ensure the sender is assigned from the authenticated user
-        serializer.save(sender=self.request.user, conversation=conversation)
+        """
+        Override to make sure the user is sending a message to a valid conversation.
+        """
+        conversation_id = self.kwargs.get('conversation_id')
+        try:
+            conversation = Conversation.objects.get(id=conversation_id)
+        except Conversation.DoesNotExist:
+            raise PermissionDenied("Conversation does not exist.")
+        
+        if self.request.user not in conversation.participants.all():
+            raise PermissionDenied("You are not a participant in this conversation.")
+        
+        serializer.save(user=self.request.user, conversation=conversation)
