@@ -8,6 +8,7 @@ from .serializers import ConversationSerializer, MessageSerializer
 from .models import User
 from rest_framework import permissions
 from .permissions import IsOwner
+from .permissions import IsParticipantOfConversation
 
 # Filter class for filtering Conversations
 class ConversationFilter(filters.FilterSet):
@@ -58,11 +59,14 @@ class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = MessageFilter
-    permission_classes = [permissions.IsAuthenticated, IsOwner]
+    permission_classes = [permissions.IsAuthenticated, IsParticipantOfConversation, IsOwner]
     
     def get_queryset(self):
-        # Return only the messages related to the logged-in user
-        return Message.objects.filter(user=self.request.user)
+        """
+        Return messages that belong only to conversations
+        the current user participates in.
+        """
+        return Message.objects.filter(conversation__participants=self.request.user)
 
     def perform_create(self, serializer):
         conversation = serializer.validated_data['conversation']
