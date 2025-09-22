@@ -6,6 +6,8 @@ from django_filters import rest_framework as filters
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 from .models import User
+from rest_framework import permissions
+from .permissions import IsOwner
 
 # Filter class for filtering Conversations
 class ConversationFilter(filters.FilterSet):
@@ -21,6 +23,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = ConversationFilter
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         # Create a conversation and add participants
@@ -55,6 +58,11 @@ class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = MessageFilter
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
+    
+    def get_queryset(self):
+        # Return only the messages related to the logged-in user
+        return Message.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         conversation = serializer.validated_data['conversation']
