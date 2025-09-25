@@ -12,7 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(max_length=20, allow_null=True, allow_blank=True)
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
     
-    full_name = serializers.SerializerMethodField()
+    # full_name = serializers.SerializerMethodField()
 
     class Meta:
         model = User

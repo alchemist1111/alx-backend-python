@@ -4,16 +4,37 @@ from rest_framework.decorators import action
 from rest_framework import status
 from django_filters import rest_framework as filters
 from .models import Conversation, Message
-from .serializers import ConversationSerializer, MessageSerializer
+from .serializers import ConversationSerializer, MessageSerializer, UserSerializer
 from django.contrib.auth import get_user_model
 from rest_framework import permissions
-from .permissions import IsOwner
 from .permissions import IsParticipantOfConversation
 from django_filters.rest_framework import DjangoFilterBackend
 from .pagination import MessagePagination
 from .filters import MessageFilter
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 
 User = get_user_model()
+
+# User Registration
+class UserRegistrationView(APIView):
+    permission_classes = [AllowAny]
+
+    
+    def post(self, request, *args, **kwargs):
+        """
+          Handles the POST request to register a new user.
+          
+        """
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            message = {
+                "message": "The user registered successfully.",
+                "user": serializer.data
+            }
+            return Response(message, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # Filter class for filtering Conversations
 class ConversationFilter(filters.FilterSet):
