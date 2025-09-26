@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
 from django.http import HttpResponseForbidden
+from collections import defaultdict
+from django.http import JsonResponse
 
 class RequestLoggingMiddleware:
     def __init__(self, get_response):
@@ -42,13 +44,104 @@ class RestrictAccessByTimeMiddleware:
         """
         Checks the current time and restricts access to the chat outside the allowed time range (9 AM - 6 PM).
         """
+        start_time = 9
+        end_time = 18
+        
         current_hour = datetime.now().hour # Get the current hour
         
         # If the current hour is outside the allowed range (not between 9 AM and 6 PM)
-        if current_hour < 9 or current_hour >= 18:
+        if current_hour < start_time or current_hour >= end_time:
             # Deny access to the chats
             return HttpResponseForbidden("Access to the chat is restricted to between 9 AM and 6 PM.")
         
         # If the time is within the allowed range, continue processing the request
         response = self.get_response
-        return response          
+        return response   
+
+class OffensiveLanguageMiddleware:
+    """
+    Middleware that limits the number of POST requests (messages) a user can send
+    within a certain time window based on their IP address.
+    """
+    def __init__(self, get_response):
+        """
+        Initialize the middleware.
+        
+        Args:
+            get_response: The next middleware or view in the chain
+        """
+        self.get_reponse = get_response
+        self.ip_requests = defaultdict(deque)
+        
+        # Configuration
+        self.max_requests = 5  # Maximum requests allowed
+        self.time_window = 60  # Time window in seconds (1 minute)  
+        
+    def __call__(self, request):
+        """
+        Track POST requests by IP address and enforce rate limits.
+        
+        Args:
+            request: The HTTP request object
+            
+        Returns:
+            HTTP 429 Too Many Requests if limit exceeded,
+            otherwise continues with normal response
+        """
+        # Only apply rate limiting to POST requests (message sending)
+        if request.method == 'POST':
+            # Get client ip address
+            ip_address = self.get_client_ip(request)
+            current_time = time.time()
+            
+            # Clean old requests outside the time window
+            self.cleanup_old_requests(ip_address, current_time)
+            
+            # Check if user has exceeded the rate limit
+            if len(self.ip_requests[ip_address]) >= self.max_requests:
+                error_message = {
+                    "error": "Rate limit exceeded",
+                    "message": f"You have exceeded the maximum of {self.max_requests} messages per minute. Please wait before sending more messages.",
+                    "limit": self.max_requests,
+                    "time_window": "1 minute",
+                    "retry_after": self.time_window
+                }  
+                return JsonResponse(error_message, status=429)
+        # Add current request timestamp
+        self.ip_requests[ip_address].append(current_time)
+    
+    def get_client_ip(self, request):
+        """
+        Extract client IP address from request, considering proxy headers.
+        
+        Args:
+            request: The HTTP request object
+            
+        Returns:
+            str: Client IP address
+        """
+        # Check for IP address in proxy headers first
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        
+        if x_forwarded_for:
+            # Take the first IP if there are multiple (in case of multiple proxies)
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            # Fall back to REMOTE_ADDR
+            ip = request.META.get('REMOTE_ADDR')
+            
+        return ip 
+    
+    def cleanup_old_requests(self, ip_address, current_time):
+        """
+        Remove timestamps that are outside the time window.
+        
+        Args:
+            ip_address (str): Client IP address
+            current_time (float): Current timestamp in seconds
+        """
+        cutoff_time = current_time - self.time_window
+        
+        # Remove old timestamps
+        while self.ip_requests[ip_address] and self.ip_requests[ip_address][0] < cutoff_time:
+            self.ip_requests[ip_address].popleft()                       
