@@ -42,11 +42,11 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Email is already in use.')
         return value
     
-    def validate_phone_number(self, value):
-        # Validate phone number format using a regex.
-        if value and not re.match(r'^\+?1?\d{9, 15}$', value):
-            raise serializers.ValidationError('Phone number must be entered in the format: "+999999999". Up to 15 digits allowed.')
-        return value
+    # def validate_phone_number(self, value):
+    #     # Validate phone number format using a regex.
+    #     if value and not re.match(r'^\+?1?\d{9, 15}$', value):
+    #         raise serializers.ValidationError('Phone number must be entered in the format: "+999999999". Up to 15 digits allowed.')
+    #     return value
     
     def validate_role(self, value):
         # Ensure the role is one of the predifined choices
