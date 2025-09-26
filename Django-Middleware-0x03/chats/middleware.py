@@ -22,7 +22,7 @@ class RequestLoggingMiddleware:
         log_message = f'{datetime.now()} - User: {user} - Path: {request.path}'
         
         # Log to the file
-        with open('request.log', 'a') as log_file:
+        with open('requests.log', 'a') as log_file:
             log_file.write(log_message + '\n')
         
         # Ensure the request continues to the next middleware/view
