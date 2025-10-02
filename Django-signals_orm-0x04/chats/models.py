@@ -69,6 +69,7 @@ class Message(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages', null=False, db_index=True)
     message_body = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)
+    parent_message = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='replies')
     
     class Meta:
         """Class for defining message table indexes"""

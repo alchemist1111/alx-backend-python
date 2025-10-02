@@ -2,7 +2,7 @@
 from django.urls import path, include
 from rest_framework import routers
 from rest_framework_nested import routers as nested_routers
-from .views import ConversationViewSet, MessageViewSet, UserRegistrationView
+from .views import ConversationViewSet, MessageViewSet, ThreadedConversationView, UserRegistrationView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -35,4 +35,6 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    
+    path('threaded_conversation/<int:message_id>/', ThreadedConversationView.as_view(), name='threaded_conversation'),
 ]

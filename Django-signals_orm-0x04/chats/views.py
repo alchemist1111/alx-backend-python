@@ -185,3 +185,27 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         # Proceed with deleting the message
         instance.delete()
+
+
+class ThreadedConversationView(APIView):
+    
+    def get_replies(self, parent_message):
+        """Recursive method to fetch all replies for a given parent message."""
+        replies = parent_message.replies.all()  # Get all replies to the message
+        result = []
+        for reply in replies:
+            reply_data = MessageSerializer(reply).data  # Serialize the reply
+            # Recursively fetch replies to this reply (nested replies)
+            reply_data['replies'] = self.get_replies(reply)
+            result.append(reply_data)
+        return result
+
+    def get(self, request, message_id, *args, **kwargs):
+        # Fetch the message and its replies efficiently using prefetch_related
+        message = Message.objects.prefetch_related('replies').select_related('sender', 'receiver').get(id=message_id)
+        
+        # Serialize the message and its replies
+        message_data = MessageSerializer(message).data
+        message_data['replies'] = self.get_replies(message)
+        
+        return Response(message_data, status=status.HTTP_200_OK)        
