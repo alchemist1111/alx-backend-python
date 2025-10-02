@@ -13,6 +13,7 @@ from .pagination import MessagePagination
 from .filters import MessageFilter
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
+from django.views.decorators.cache import cache_page
 
 User = get_user_model()
 
@@ -86,6 +87,36 @@ class MessageViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = MessageFilter
     permission_classes = [permissions.IsAuthenticated, IsParticipantOfConversation]
+    
+     # Cache the list view for 60 seconds
+    @cache_page(60)
+    def list(self, request, *args, **kwargs):
+        """
+        Return a list of messages for the conversation that the logged-in user is a participant of.
+        """
+        conversation_id = self.kwargs.get('conversation_id')
+
+        try:
+            conversation = Conversation.objects.get(id=conversation_id)
+        except Conversation.DoesNotExist:
+            return Response(
+                {"detail": "Conversation does not exist."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Check if the user is a participant of the conversation
+        if self.request.user not in conversation.participants.all():
+            return Response(
+                {"detail": "You are not a participant in this conversation."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Fetch messages for the conversation and apply optimizations
+        conversation_messages = Message.objects.filter(conversation=conversation).only('id', 'sender', 'content', 'timestamp')
+
+        # Serialize the messages
+        serializer = MessageSerializer(conversation_messages, many=True)
+        return Response(serializer.data)
     
     def get_queryset(self):
         """

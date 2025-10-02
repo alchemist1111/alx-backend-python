@@ -83,6 +83,6 @@ class UnreadMessagesView(APIView):
         unread_messages = Message.objects.filter(receiver=request.user, read=False).only('id', 'sender', 'content', 'timestamp')
 
         # Serialize the unread messages
-        serializer = MessageSerializer(unread_messages, message many=True)
+        serializer = MessageSerializer(unread_messages, message, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)       
 
