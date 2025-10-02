@@ -5,8 +5,8 @@ User = get_user_model()
 
 # Message model
 class Message(models.Model):
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='%(app_label)s_%(class)s_sent', related_query_name='%(app_label)s_%(class)s_sent')
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='%(app_label)s_%(class)s_messages', related_query_name='%(app_label)s_%(class)s_messages')
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     
