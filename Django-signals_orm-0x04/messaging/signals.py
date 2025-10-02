@@ -1,3 +1,4 @@
+from datetime import timezone
 from django.db.models.signals import post_save
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
@@ -22,8 +23,10 @@ def log_message_edit(sender, instance, **kwargs):
                 # Create a new history record for the edited message
                 MessageHistory.objects.create(
                     message = original,
-                    old_content=original.content
+                    old_content=original.content,
+                    edited_by=instance.edited_by,
                 )   
                 instance.edited = True # Mark the message as edited
+                instance.edited_at = timezone.now()
         except Message.DoesNotExist:
             pass      # If the message does not exist, do nothing     
