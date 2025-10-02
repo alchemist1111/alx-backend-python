@@ -11,7 +11,7 @@ User = get_user_model()
 class DeleteUserView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def delete(self, request, *args, **kwargs):
+    def delete_user(self, request, *args, **kwargs):
         user = request.user  # The logged-in user
         try:
             user.delete()  # This will trigger the post_delete signal for the User model
