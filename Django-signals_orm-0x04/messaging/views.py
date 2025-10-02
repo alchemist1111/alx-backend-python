@@ -70,5 +70,17 @@ class ThreadedConversationView(APIView):
             parent_message=parent_message  # Set the parent message as the one being replied to
         )
 
-        return Response(MessageSerializer(new_message).data, status=status.HTTP_201_CREATED)        
+        return Response(MessageSerializer(new_message).data, status=status.HTTP_201_CREATED)    
+
+
+class UnreadMessagesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Get unread messages for the logged-in user
+        unread_messages = Message.unread_messages.for_user(request.user)
+
+        # Serialize unread messages
+        serializer = MessageSerializer(unread_messages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)        
 
