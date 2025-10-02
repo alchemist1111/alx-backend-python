@@ -79,9 +79,10 @@ class UnreadMessagesView(APIView):
     def get(self, request, *args, **kwargs):
         # Use the custom manager to fetch unread messages for the logged-in user
         # Apply filter and .only() here to optimize the query
+        message = Message.unread.unread_for_user
         unread_messages = Message.objects.filter(receiver=request.user, read=False).only('id', 'sender', 'content', 'timestamp')
 
         # Serialize the unread messages
-        serializer = MessageSerializer(unread_messages, many=True)
+        serializer = MessageSerializer(unread_messages, message many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)       
 
