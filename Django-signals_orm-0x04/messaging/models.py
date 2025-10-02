@@ -9,6 +9,7 @@ class Message(models.Model):
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='%(app_label)s_%(class)s_messages', related_query_name='%(app_label)s_%(class)s_messages')
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    edited = models.BooleanField(default=False)
     
     
     def __str__(self):
@@ -24,4 +25,14 @@ class Notification(models.Model):
     
     
     def __str__(self):
-        return f'Notification for {self.user.first_name} {self.user.last_name} about message from {self.user.first_name} {self.user.last_name}'    
+        return f'Notification for {self.user.first_name} {self.user.last_name} about message from {self.user.first_name} {self.user.last_name}' 
+
+
+# Message history model
+class MessageHistory(models.Model):
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='%(app_label)s_%(class)s_history', related_query_name='%(app_label)s_%(class)s_history')
+    old_content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f'History for Message {self.message.id} at {self.timestamp}'       
