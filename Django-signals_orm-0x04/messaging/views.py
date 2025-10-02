@@ -8,6 +8,13 @@ from django.contrib.auth import get_user_model
 from .serializers import MessageSerializer
 from .models import Message
 from django.shortcuts import get_object_or_404
+from django.views.decorators.cache import cache_page
+from rest_framework import viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from chats.models import Message, Conversation
+from chats.pagination import MessagePagination
+from chats.permissions import IsParticipantOfConversation
+from chats.filters import MessageFilter
 
 User = get_user_model()
 
@@ -84,5 +91,43 @@ class UnreadMessagesView(APIView):
 
         # Serialize the unread messages
         serializer = MessageSerializer(unread_messages, message, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)       
+        return Response(serializer.data, status=status.HTTP_200_OK)  
+
+class MessageViewSet(viewsets.ModelViewSet):
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = MessageFilter
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
+    pagination_class = MessagePagination
+
+    # Cache the list view for 60 seconds
+    @cache_page(60)
+    def list(self, request, *args, **kwargs):
+        """
+        Return a list of messages for the conversation that the logged-in user is a participant of.
+        """
+        conversation_id = self.kwargs.get('conversation_id')
+
+        try:
+            conversation = Conversation.objects.get(id=conversation_id)
+        except Conversation.DoesNotExist:
+            return Response(
+                {"detail": "Conversation does not exist."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Check if the user is a participant of the conversation
+        if self.request.user not in conversation.participants.all():
+            return Response(
+                {"detail": "You are not a participant in this conversation."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Fetch messages for the conversation and apply optimizations
+        conversation_messages = Message.objects.filter(conversation=conversation).only('id', 'sender', 'content', 'timestamp')
+
+        # Serialize the messages
+        serializer = MessageSerializer(conversation_messages, many=True)
+        return Response(serializer.data)         
 
