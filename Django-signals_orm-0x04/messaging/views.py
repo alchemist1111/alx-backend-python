@@ -7,6 +7,7 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from .serializers import MessageSerializer
 from .models import Message
+from django.shortcuts import get_object_or_404
 
 User = get_user_model()
 
@@ -23,25 +24,51 @@ class DeleteUserView(APIView):
 
 
 class ThreadedConversationView(APIView):
-    
+    permission_classes = [IsAuthenticated]
+
     def get_replies(self, parent_message):
-        """Recursive method to fetch all replies for a given parent message."""
-        replies = parent_message.replies.all()  # Get all replies to the message
+        """
+        Recursive function to fetch all replies to a message and its nested replies.
+        """
+        replies = parent_message.replies.all()  # Get all replies to the current message
         result = []
+
+        # For each reply, serialize it and add any nested replies
         for reply in replies:
             reply_data = MessageSerializer(reply).data  # Serialize the reply
-            # Recursively fetch replies to this reply (nested replies)
-            reply_data['replies'] = self.get_replies(reply)
+            reply_data['replies'] = self.get_replies(reply)  # Recursively get nested replies
             result.append(reply_data)
+
         return result
 
     def get(self, request, message_id, *args, **kwargs):
-        # Fetch the message and its replies efficiently using prefetch_related
-        message = Message.objects.prefetch_related('replies').select_related('sender', 'receiver').get(id=message_id)
-        
-        # Serialize the message and its replies
+        # Fetch the root message (the one being replied to) using select_related and prefetch_related
+        message = get_object_or_404(
+            Message.objects.prefetch_related('replies').select_related('sender', 'receiver'),
+            id=message_id
+        )
+
+        # Serialize the message and its replies recursively
         message_data = MessageSerializer(message).data
-        message_data['replies'] = self.get_replies(message)
+        message_data['replies'] = self.get_replies(message)  # Add replies in a nested format
         
-        return Response(message_data, status=status.HTTP_200_OK)        
+        return Response(message_data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        """
+        This view allows users to send a reply to a specific message.
+        """
+        sender = request.user  # Get the sender (currently logged-in user)
+        receiver = get_object_or_404(User, id=request.data.get('receiver_id'))
+        parent_message = get_object_or_404(Message, id=request.data.get('parent_message_id'))
+
+        # Create a new message (reply)
+        new_message = Message.objects.create(
+            sender=sender,
+            receiver=receiver,
+            content=request.data.get('content'),
+            parent_message=parent_message  # Set the parent message as the one being replied to
+        )
+
+        return Response(MessageSerializer(new_message).data, status=status.HTTP_201_CREATED)        
 
