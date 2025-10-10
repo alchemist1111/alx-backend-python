@@ -18,3 +18,6 @@ EXPOSE 8000
 
 # Step 7: Set the command to run your Django app
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+# Step 8: Run the app
+RUN docker run -p 8000:8000 messaging_app
