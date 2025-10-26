@@ -10,7 +10,7 @@ pipeline {
             steps {
                 script {
                     // Pull the source code from GitHub
-                    git credentialsId: '2025', url: 'https://github.com/alchemist1111/alx-backend-python.git', branch: 'main'
+                    git credentialsId: '2025', url: 'https://github.com/alchemist1111/alx-backend-python.git', git branch: 'main'
                 }
             }
         }
