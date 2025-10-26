@@ -1,0 +1,51 @@
+pipeline {
+    agent any
+
+    environment {
+        GITHUB_CREDENTIALS = credentials('2025') // Replace with your credentials ID
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    // Pull the source code from GitHub
+                    git credentialsId: '2025', url: 'https://github.com/alchemist1111/alx-backend-python.git', branch: 'main'
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    // Install Python dependencies
+                    sh 'python3 -m venv venv'
+                    sh 'source venv/bin/activate && pip install -r messaging_app/requirements.txt'
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    // Run tests with pytest and generate the report
+                    sh 'source venv/bin/activate && pytest --maxfail=1 --disable-warnings -q > test_report.txt'
+                }
+            }
+        }
+
+        stage('Archive Test Report') {
+            steps {
+                // Archive the test results
+                archiveArtifacts artifacts: 'test_report.txt', allowEmptyArchive: true
+            }
+        }
+    }
+
+    post {
+        always {
+            // Clean up after the build
+            cleanWs()
+        }
+    }
+}
