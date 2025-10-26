@@ -43,7 +43,13 @@ jobs:
           source venv/bin/activate
           pip install --upgrade pip
           pip install -r messaging_app/requirements.txt
-          pip install pytest mysqlclient
+          pip install pytest mysqlclient flake8 pytest-cov
+
+      - name: Run Flake8 for Linting
+        run: |
+          source venv/bin/activate
+          flake8 messaging_app --max-line-length=120
+        continue-on-error: false  # Fail the build if linting errors are found
 
       - name: Wait for MySQL to be ready
         run: |
@@ -59,4 +65,10 @@ jobs:
         run: |
           source venv/bin/activate
           python manage.py migrate  # Run migrations to set up the DB
-          pytest messaging_app/tests --maxfail=1 --disable-warnings -q  # Run tests with pytest
+          pytest messaging_app/tests --maxfail=1 --disable-warnings -q --cov=messaging_app --cov-report=xml  # Run tests and generate coverage report
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage-report
+          path: coverage.xml  # Upload the coverage report as an artifact
