@@ -20,7 +20,7 @@ pipeline {
                 script {
                     // Install Python dependencies
                     sh 'python3 -m venv venv'
-                    sh 'source venv/bin/activate && pip install -r messaging_app/requirements.txt'
+                    sh 'source venv/bin/activate && pip3 install -r messaging_app/requirements.txt'
                 }
             }
         }
