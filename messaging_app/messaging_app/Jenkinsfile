@@ -2,7 +2,10 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_CREDENTIALS = credentials('2025') // Replace with your credentials ID
+        GITHUB_CREDENTIALS = credentials('2025') 
+        DOCKER_CREDENTIALS = credentials('a3f6c1176f46f2319a5ae136e7e8f45a41eeeda52a47f9e76056f91c169e01f2')
+        IMAGE_NAME = 'jenkins' 
+        IMAGE_TAG = 'latest' 
     }
 
     stages {
@@ -30,6 +33,35 @@ pipeline {
                 script {
                     // Run tests with pytest and generate the report
                     sh 'source venv/bin/activate && pytest --maxfail=1 --disable-warnings -q > test_report.txt'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image
+                    sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG messaging_app/'
+                }
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                script {
+                    // Login to Docker Hub
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials-id', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    // Push the Docker image to Docker Hub
+                    sh 'docker push $IMAGE_NAME:$IMAGE_TAG'
                 }
             }
         }
